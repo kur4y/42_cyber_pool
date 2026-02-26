@@ -20,10 +20,10 @@ make
 Usage:
 - ./stockholm [-h] [-v] [-r REVERSE] [-s]
 
-    -h, --help : Show the help message and exit.
+-h, --help : Show the help message and exit.
 
-    -v, --version : Show the version of the program.
+-v, --version : Show the version of the program.
 
-    -r KEY, --reverse KEY : Decrypt the files using the provided key.
+-r KEY, --reverse KEY : Decrypt the files using the provided key.
 
-    -s, --silent : Enable silent mode (no output during encryption/decryption).
+-s, --silent : Enable silent mode (no output during encryption/decryption).

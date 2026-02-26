@@ -152,14 +152,17 @@ def main():
 
     final_dl_image = {'count': 0}
 
-    if args.recursive:
-        print(f"{YELLOW}[INFO] Recursive mode enabled (Level {args.level}){RESET}")
-        crawl(args.url, args.path, args.level, download_count=final_dl_image)
-    else:
-        print(f"{YELLOW}[INFO] Simple mode (Level 0){RESET}")
-        crawl(args.url, args.path, 0, download_count=final_dl_image)
+    try:
+        if args.recursive:
+            print(f"{YELLOW}[INFO] Recursive mode enabled (Level {args.level}){RESET}")
+            crawl(args.url, args.path, args.level, download_count=final_dl_image)
+        else:
+            print(f"{YELLOW}[INFO] Simple mode (Level 0){RESET}")
+            crawl(args.url, args.path, 0, download_count=final_dl_image)
+            
+    except KeyboardInterrupt:
+        print(f"\n{ORANGE}[WARNING] Spider interrupted by user (CTRL+C). Exiting safely.{RESET}")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
-
-
