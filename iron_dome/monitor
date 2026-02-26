@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import time
+import daemon
+import logging
+import argparse
+from entropy import calculate_entropy
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+
+# ansi colors
+CYAN = "\033[96m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+ORANGE = "\033[38;5;208m"
+RESET = "\033[0m"
+
+LOG_DIR = "/var/log/irondome"
+LOG_FILE = os.path.join(LOG_DIR, "irondome.log")
+
+# check root privilege
+if os.getuid() != 0:
+    print(f"{RED}[ERROR] This program must be run as root.{RESET}")
+    sys.exit(1)
+
+# ensure log directory exists
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - [%(levelname)s] - %(message)s"
+)
+
+class RansomwareDetector(FileSystemEventHandler):
+    def on_modified(self, event):
+        if event.is_directory:
+            return
+        
+        file_path = event.src_path
+        entropy = calculate_entropy(file_path)
+
+        if entropy > 7.5:
+            logging.critical(f"{ORANGE}[CRITICAL] High-entropy encryption detected:{RESET} {file_path} (Entropy: {entropy:.2f})")
+        elif entropy > 5.2 and file_path.endswith(".ft"):
+            logging.warning(f"{RED}[WARNING] Possible Base64 encoding detected:{RESET} {file_path} (Entropy: {entropy:.2f})")
+        else:
+            logging.info(f"{GREEN}[INFO] Clean file modified :{RESET} {file_path} (Entropy: {entropy:.2f})")
+
+def start_monitoring(target_dirs):
+    logging.info(f"{CYAN}[INFO] Iron Dome enabled on:{RESET} {', '.join(target_dirs)}")
+
+    event_handler = RansomwareDetector()
+    observer = Observer()
+    
+    for target in target_dirs:
+        if os.path.exists(target):
+            observer.schedule(event_handler, target, recursive=True)
+        else:
+            logging.warning(f"{YELLOW}[WARNING] Path not found, skipping:{target} {RESET}")
+
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    
+    except KeyboardInterrupt:
+        logging.error(f"{CYAN}[INFO] Interrupted: Iron Dome disabled.{RESET}")
+        observer.stop()
+    
+    observer.join()
+
+def main():
+    parser = argparse.ArgumentParser(description="Iron Dome - Ransomware detection daemon")
+    parser.add_argument("paths", nargs="*", default=["/home", "/var/www"], help="Paths to monitor (default: /home and /var/www)")
+    args = parser.parse_args()
+
+    print(f"{CYAN}[INFO] Iron Dome enabled in background.{RESET}")
+    print(f"{CYAN}[INFO] Monitoring:{RESET} {', '.join(args.paths)}")
+    print(f"{CYAN}[INFO] Alerts will be written on:{RESET} {LOG_FILE}")
+
+    # daemonization
+    with daemon.DaemonContext(
+        files_preserve=[logging.getLogger().handlers[0].stream]
+    ):
+        start_monitoring(args.paths)
+
+if __name__ == "__main__":
+    main()
+
+# head -c 10000 /dev/urandom > ~/infection/raw_noise.bin
+# ps aux | grep monitor.py
+# tail -f /var/log/irondome.log
+# pkill -f monitor.py

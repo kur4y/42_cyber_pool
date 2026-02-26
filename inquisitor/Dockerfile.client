@@ -1,0 +1,6 @@
+FROM alpine:latest
+
+RUN apk add --no-cache lftp
+
+# keeps container on
+CMD ["tail", "-f", "/dev/null"]

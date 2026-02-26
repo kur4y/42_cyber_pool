@@ -1,0 +1,11 @@
+# Suppress logs for security
+Log notice stdout
+
+# Tor data directory (private key + hostname)
+HiddenServiceDir /var/lib/tor/hidden_service/
+
+# Web: onion:80 -> localhost:80
+HiddenServicePort 80 127.0.0.1:80
+
+# SSH: onion:4242 -> localhost:4242
+HiddenServicePort 4242 127.0.0.1:4242

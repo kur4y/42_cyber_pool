@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# C / Compilation
+*.o
+*.out
+
+# Arachnida
+arachnida/data/
+
+# FT_OTP
+ft_otp/ft_otp.key
+ft_otp/key.hex
+
+# Stockholm
+stockholm/.infection.key
+## if executable is generated via Makefile (keeping stockholm.py tracked)
+stockholm/stockholm
+
+# Inquisitor
+inquisitor/ftp_credentials.log
+
+# Iron Dome
+iron_dome/*.log
+iron_dome/alerts/
+
+# Vaccine
+vaccine/vaccine_archive.txt
+vaccine/target/vulnerable.db
+## if executable is generated via Makefile (keeping vaccine.py tracked)
+vaccine/vaccine

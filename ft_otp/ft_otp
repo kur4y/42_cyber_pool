@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+import sys
+import time
+import hmac
+import struct
+import hashlib
+import argparse
+
+
+# ansi colors
+CYAN = "\033[96m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+ORANGE = "\033[38;5;208m"
+RESET = "\033[0m"
+
+# master key for encrypting/decrypting the .key file
+XOR_KEY = b"CyberPool42_MasterKey_Secret"
+
+# encryption/decryption simple XOR
+def xor_cipher(data:bytes, key:bytes) -> bytes:
+    # encrypt each data's byte on key loop
+    return bytearray([b ^ key[i % len(key)] for i, b in enumerate(data)])
+
+# -g: read, validate, encrypt & save the key
+def save_key(hex_key_path):
+    try:
+        with open(hex_key_path, 'r') as f:
+            hex_data = f.read().strip()
+        
+        if len(hex_data) < 64:
+            print(f"./ft_otp: error: key must be 64 hexadecimal characters.")
+            sys.exit(1)
+        
+        # ensure even length for fromhex by truncating to the nearest even number
+        if len(hex_data) % 2 != 0:
+            hex_data = hex_data[:-1]
+
+        try:
+            secret_bytes = bytes.fromhex(hex_data)
+        
+        except ValueError:
+            print(f"./ft_otp: error: key must be valid hexadecimal.")
+            sys.exit(1)
+        
+        encrypted_data = xor_cipher(secret_bytes, XOR_KEY)
+        with open("ft_otp.key", "wb") as f:
+            f.write(encrypted_data)
+        
+        print(f"Key was successfully saved in ft_otp.key.")
+
+    except FileNotFoundError:
+        print(f"./ft_otp: error: file '{hex_key_path}' not found.")
+        sys.exit(1)
+
+# -k: read the encrypted key & generate code
+def get_otp(key_file):
+    try:
+        with open(key_file, "rb") as f:
+            encrypted_data = f.read()
+        
+        secret_bytes = xor_cipher(encrypted_data, XOR_KEY)
+
+        # 30s counter
+        time_counter = int(time.time() / 30)
+
+        # pack into 8 bytes (Big Endian) required for HMAC
+        counter_bytes = struct.pack(">Q", time_counter)
+
+        # HMAC-SHA1
+        hmac_digest = hmac.new(secret_bytes, counter_bytes, hashlib.sha1).digest()
+
+        # dynamic truncation (RFC 4226)
+        # use the last byte of the hash to determine the offset
+        offset = hmac_digest[-1] & 0x0f
+
+        # extract 4 bytes starting from the offset
+        binary_code = struct.unpack(">I", hmac_digest[offset:offset+4])[0]
+
+        # apply a mask to remove the sign bit (0x7fffffff)
+        binary_code = binary_code & 0x7fffffff
+
+        # modulo 1_000_000 to get a 6-digit code
+        otp_code = binary_code % 1000000
+
+        # with leading zeros if needed
+        print(f"{otp_code:06d}")
+
+    except FileNotFoundError:
+        print(f"./ft_otp: file '{key_file}' not found.")
+    except Exception as e:
+        print(f"./ft_otp: {e}")
+
+def main():
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-g", help="Save the hexa key into ft_otp.key")
+    group.add_argument("-k", help="Generate an OTP from key file")
+
+    args = parser.parse_args()
+
+    if args.g:
+        save_key(args.g)
+    elif args.k:
+        get_otp(args.k)
+
+if __name__ == "__main__":
+    main()
